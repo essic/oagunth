@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>oagunth_core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Time.fs" />
+    <Compile Include="Cra.fs" />
+    <Compile Include="Ports.fs" />
+    <None Include="Time.fsx" />
+    <None Include="Cra.fsx" />
+  </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
+</Project>
