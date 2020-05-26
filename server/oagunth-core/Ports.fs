@@ -1,12 +1,12 @@
 namespace Oagunth.Core
 
-open OagunthCore.Core
-
+[<AutoOpen>]
 module Ports =
     open Time
     open Cra
     open NodaTime
     
+    //This is how we define an interface !
     type IHandleUserActivitySubmission =
         abstract member Submit:
             user:User * month:MonthName * year:Year * week:WeekNumber ->Result<Unit,OagunthError>

@@ -2,9 +2,10 @@ module Dto
 open System
 open System.Globalization
 open Oagunth.Core.Cra
-open NodaTime
 open Oagunth.Core.Time
+open NodaTime
 
+//This is a class !
 type ActivityDto(id,name) =
     member val Id : Guid = id with get,set
     member val Name : String = name with get,set

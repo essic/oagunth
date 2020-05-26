@@ -5,7 +5,7 @@ open System
 open System.Globalization
 open System.Security.Authentication
 open Giraffe
-open OagunthCore.Core.OagunthErrors
+open Oagunth.Core.OagunthErrors
 open Saturn
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
@@ -14,21 +14,22 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open FSharp.Control.Tasks.V2
 open NodaTime
-open NodaTime.Extensions
 open MongoDB.Driver
+open Oagunth.Core.Time
+open Adapters
+open Drivers
+open Dto
+open Oagunth.Core
+
 module Server =
-    open Oagunth.Core.Time
-    open Oagunth.Core.Ports
-    open Adapters
-    open Drivers
-    open Dto
-    
+
     [<CLIMutable>]
     type CreateActivitiesRequest =
         {
             Activities : string array
         }
-     
+    
+    //Some DI 'magic'
     let serviceConfig (serviceCollection:IServiceCollection) =
         serviceCollection
             .AddScoped<IManageUser,UserService>()

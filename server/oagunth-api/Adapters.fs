@@ -1,14 +1,12 @@
 module Adapters
+open Oagunth.Core
 open Oagunth.Core.Cra
 open Oagunth.Core.Time
-open Oagunth.Core.Ports
 open MongoDB.Bson
 open MongoDB.Driver
 open System.Linq
 open NodaTime
 open System
-open OagunthCore.Core.OagunthErrors
-
 
 type UserActivitySubmission(client:IMongoClient) =
     let submittedStatus = "submitted"

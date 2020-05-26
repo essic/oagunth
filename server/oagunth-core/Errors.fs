@@ -1,5 +1,7 @@
-module OagunthCore.Core
+namespace Oagunth.Core
 open System
+
+// Get out of here, it ain't ready yet !
 
 [<AutoOpen>]
 module OagunthErrors =

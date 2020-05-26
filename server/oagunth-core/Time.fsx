@@ -1,5 +1,7 @@
 #load @"../.paket/load/netcoreapp3.1/main.group.fsx"
+#load "Errors.fs"
 #load "Time.fs"
+open Oagunth.Core
 open Oagunth.Core.Time
 open NodaTime
 

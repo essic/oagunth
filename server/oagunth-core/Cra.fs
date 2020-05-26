@@ -1,7 +1,5 @@
 namespace Oagunth.Core
 
-open OagunthCore.Core.OagunthErrors
-
 module Cra =
     open Time
     open NodaTime
@@ -41,6 +39,9 @@ module Cra =
             member x.String =
                 let (E value) = x
                 value
+                
+    //Creating a module of the type, allows to functions under the type
+    //A good way to avoid name collision, amongst other thing ...
     module Email =
         let make email =
             try
@@ -126,11 +127,13 @@ module Cra =
             c.WeeksStatus
 
     type UserCalendarTrackingError =
+        | Unknown of string
+        //Behold ! Anonymous records !
         | DatesOutsideOfCalendarError of {| Month: MonthName; Msg : String |}
         | InvalidTimeTrackingError of {| Month : MonthName;  ActivitiesError : (LocalDate * float<day>) list |}
         | DuplicatedActivityTrackingDetected of {| Duplicates : (LocalDate*ActivityRef) list |}
-        | Unknown of string
         with
+            //This is how we implement an interface !
             interface ITransformErrorToString with
                 member x.String =
                     match x with

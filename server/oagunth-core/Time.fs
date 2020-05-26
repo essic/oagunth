@@ -1,7 +1,6 @@
 namespace Oagunth.Core
 
 open NodaTime
-open OagunthCore.Core.OagunthErrors
 
 //We create a module, it corresponds to a static class from the CLR perspective
 module Time =
@@ -45,6 +44,8 @@ module Time =
     //Let's not use the pipe forward operator (|>) to explain what it does ! 
     let isBusinessDay' (day:LocalDate) =
         List.contains day.DayOfWeek businessDays
+        
+    //Let's check if those works ...
 
     //Let's do some function composition with (>>)
     // (>>) f g ~ g ( f )
@@ -205,21 +206,22 @@ module Time =
             listOfDays.Add(dateCursor)
             dateCursor <- dateCursor.PlusDays(1)
 
-        listOfDays.GroupBy(fun day ->
+        listOfDays
+            .GroupBy(fun day ->
                   { WeekNumber = getWeekNumberFromDate (day)
                     WeekYear = getWeekYearFromDate (day) })
-                  //Linq Select
-                  .Select(fun grouping ->
+            //Linq Select
+            .Select(fun grouping ->
                   { Id = grouping.Key
                     WeekStartsOn = grouping.Min()
                     WeekTerminatesOn = grouping.Max()
                     //Converts from List<T> (of C#) to T list or list<T> (of F#)
                     BusinessDays = grouping.Where(isBusinessDay).OrderBy(fun d -> d) |> List.ofSeq
                     WeekEndDays = grouping.Where(isWeekendDay).OrderBy(fun d -> d) |> List.ofSeq })
-                  //Linq OrderBy
-                  .OrderBy(fun weeklyPeriod -> weeklyPeriod.Id.WeekYear)
-                  //Linq ThenBy
-                  .ThenBy(fun weeklyPeriod -> weeklyPeriod.Id.WeekNumber)
+            //Linq OrderBy
+            .OrderBy(fun weeklyPeriod -> weeklyPeriod.Id.WeekYear)
+            //Linq ThenBy
+            .ThenBy(fun weeklyPeriod -> weeklyPeriod.Id.WeekNumber)
         |> List.ofSeq 
 
     //This is an Active pattern
@@ -253,18 +255,18 @@ module Time =
 
     //Our monthly calendar type.
     //We make the constructor private so only this module can create a valid instance
-    //This is a product type (a tuple)
+    //This is a product type (like a tuple)
     //Part of the strategy to make invalid state non representable ...
     type MonthlyCalendar = private | MonthlyCalendar of month: MonthName * year: Year * content: WeeklyPeriod list
     //Let's add some methods to our type... yes we can
-        with
-            member x.IsYear(year:Year) =
-                let (MonthlyCalendar (_,year',_)) = x
-                year = year'
-            member x.IsMonth(month:Month) =
+        with //'with' allows us to attach members to this type...
+            member x.IsYear year =
+                let (MonthlyCalendar (_,year',_)) = x //We deconstruct x to get the value we need !
+                year = year' // '=' here is a comparison !
+            member x.IsMonth month =
                 let (MonthlyCalendar (month',_,_)) = x
                 month = MonthName.toInt month'
-            member x.IsMonth(month:MonthName) =
+            member x.IsMonth month =
                 let (MonthlyCalendar (month',_,_)) = x
                 month = month'          
             member x.GetWeeksInOrder() : WeeklyPeriod array =
@@ -303,7 +305,7 @@ module Time =
             //We like to recurse stuff
             let rec findFirstDayOfMonth (day: LocalDate) =
                 if (day.Month < monthValue) then day.PlusDays(1) |> findFirstDayOfMonth
-                //elif is 'else if' 
+                //'elif' is 'else if' 
                 elif day.Month = monthValue then day
                 else failwithf "Cannot look for first day of %A %i from date %A" month year day
 
