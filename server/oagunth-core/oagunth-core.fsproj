@@ -5,6 +5,7 @@
     <RootNamespace>oagunth_core</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Errors.fs" />
     <Compile Include="Time.fs" />
     <Compile Include="Cra.fs" />
     <Compile Include="Ports.fs" />

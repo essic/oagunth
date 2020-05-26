@@ -1,14 +1,19 @@
 namespace Oagunth.Core
 
+open OagunthCore.Core.OagunthErrors
+
 module Cra =
     open Time
     open NodaTime
     open System
 
+    
+    //This creates a unit of measure ...
     [<Measure>]
     type day
 
-    let isValidForOneDay (unitOfDay: float<day>) =
+    //Now I do not have simple float to represent days but float<day> !
+    let isValidForOneDay unitOfDay =
         if unitOfDay >= 0.<day> && unitOfDay % 0.25<day> = 0.<day> && unitOfDay <= 1.<day>
         then true
         else false
@@ -42,7 +47,11 @@ module Cra =
                 System.Net.Mail.MailAddress(email) |> ignore
                 email.Trim() |> E |> Ok
             with
-                _ ->  email |> sprintf "Invalid email address [%s]" |> Error
+                _ ->
+                    email
+                    |> sprintf "Invalid email address [%s]"
+                    |> OagunthError.insideSingle
+                    |> Error
 
     type User =
         { UserId: UserId
@@ -87,6 +96,10 @@ module Cra =
             match isValidForOneDay total with
             | true -> Valid(date, total)
             | false -> Invalid(date, total)
+            
+        let popIt x =
+            match x with
+            | Invalid (date,day) | Valid (date,day) -> date,day
 
     type UserCalendarTracking' =
         { User: User
@@ -114,10 +127,28 @@ module Cra =
 
     type UserCalendarTrackingError =
         | DatesOutsideOfCalendarError of {| Month: MonthName; Msg : String |}
-        | InvalidTimeTrackingError of {| Month : MonthName; ActivitiesError : TotalTimeTrackedForOneDay list |}
+        | InvalidTimeTrackingError of {| Month : MonthName;  ActivitiesError : (LocalDate * float<day>) list |}
         | DuplicatedActivityTrackingDetected of {| Duplicates : (LocalDate*ActivityRef) list |}
         | Unknown of string
-
+        with
+            interface ITransformErrorToString with
+                member x.String =
+                    match x with
+                    | DatesOutsideOfCalendarError err ->
+                        let m = sprintf "Error while computing user calendar for %A" err.Month 
+                        err.Msg
+                        |> sprintf "%s -> [%s]" m
+                    | Unknown msg -> msg
+                    | DuplicatedActivityTrackingDetected err ->
+                        let m = "Duplicated activities detected !"
+                        err.Duplicates
+                        |> sprintf "%s -> [%A]" m
+                    | InvalidTimeTrackingError err ->
+                        let m = sprintf "Irregularities on user activities detected !"
+                        err.ActivitiesError
+                        |> sprintf "%s -> [%A]" m
+                    
+    
     module UserCalendarTracking =
         let private checkDateIsInMonthBoundary
             (calendar: MonthlyCalendar)
@@ -145,6 +176,8 @@ module Cra =
                     match item with
                     | Invalid (_, _) -> true
                     | _ -> false)
+                |> List.map TotalActivityTrackedForOneDay.popIt
+                
             if not <| invalidActivities.IsEmpty
             then
                 let (MonthlyCalendarMonth month) = calendar
@@ -182,7 +215,10 @@ module Cra =
                 |> List.choose (id)
                 
             if errors.IsEmpty |> not
-            then errors |> Error
+            then errors
+                 |> Seq.map ( fun error -> (error :> ITransformErrorToString).String)
+                 |> OagunthError.insideMany
+                 |> Error
             else
                 { User = user
                   MonthlyCalendar = calendar

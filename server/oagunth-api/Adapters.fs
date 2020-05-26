@@ -7,6 +7,7 @@ open MongoDB.Driver
 open System.Linq
 open NodaTime
 open System
+open OagunthCore.Core.OagunthErrors
 
 
 type UserActivitySubmission(client:IMongoClient) =
@@ -35,10 +36,10 @@ type UserActivitySubmission(client:IMongoClient) =
                     match document.GetValue("status").AsString with
                     | status when status = submittedStatus -> Ok ActivityTrackingStatus.Submitted
                     | status when status = validatedStatus -> Ok ActivityTrackingStatus.Validated
-                    | unknown -> unknown |> sprintf "Unknown status %s" |> Error
+                    | unknown -> unknown |> sprintf "Unknown status %s"  |> OagunthError.outsideSingle |> Error
             with
-                ex -> ex.Message |> Error
-        member x.Submit(user:User,month:MonthName,year:Year,week:WeekNumber) : Result<Unit,string> =
+                ex -> ex |> OagunthError.outsideSingleExn |> Error
+        member x.Submit(user:User,month:MonthName,year:Year,week:WeekNumber)  =
             try
                 let _id = makeId user month year week
                 let document =
@@ -50,7 +51,7 @@ type UserActivitySubmission(client:IMongoClient) =
                 submissions.InsertOne(document)
                 Ok ()
             with
-             ex -> ex.Message |> Error
+             ex -> OagunthError.outsideSingleExn ex |> Error
         
         member x.HasAlreadyActivitiesSubmittedOrValidated(user:User,month:MonthName,year:Year,week:WeekNumber) =
             try
@@ -60,7 +61,7 @@ type UserActivitySubmission(client:IMongoClient) =
                 let count = submissions.CountDocuments(c)
                 (count = (int64 1)) |> Ok
             with
-            ex -> ex.Message |> Error
+            ex -> ex |> OagunthError.outsideSingleExn |> Error
     
 type UserService(client:IMongoClient) =
     let users =
@@ -82,14 +83,14 @@ type UserService(client:IMongoClient) =
                     users.InsertOne(document)
                     Ok <| { UserId = Guid.Parse(newUserId) |> Id ; UserName = email }
                 with
-                 ex -> ex.Message |> Error
+                 ex -> ex |> OagunthError.outsideSingleExn |> Error
             | Error msg -> msg |> Error
             
         member x.GetUser username =
             let id = FieldDefinition<BsonDocument,string>.op_Implicit("_id")
             let c = Builders<BsonDocument>.Filter.Eq(id,username)
             match users.Find(c).ToList() |> Seq.tryHead with
-            | None -> username |> sprintf "Cannot find [%s]" |> Error
+            | None -> username |> sprintf "Cannot find [%s]" |> OagunthError.outsideSingle |> Error
             | Some item ->
                 let userId : UserId = item.GetValue("userId").AsString |> Guid.Parse |> Id
                 item.GetValue("_id").AsString
@@ -103,9 +104,9 @@ type UserService(client:IMongoClient) =
                 let result = users.DeleteOne(c)
                 if result.DeletedCount <> (int64 0)
                 then () |> Ok
-                else username |> sprintf "Cannot delete [%s]" |> Error
+                else username |> sprintf "Cannot delete [%s]" |> OagunthError.outsideSingle |> Error
             with
-                ex -> ex.Message |> Error
+                ex -> ex |> OagunthError.outsideSingleExn |> Error
         
 type UserTimeTrackingService(client:IMongoClient) =
     let userActivities =
@@ -174,7 +175,7 @@ type UserTimeTrackingService(client:IMongoClient) =
                     |> Map.ofSeq
                 |> Ok
             with
-                ex -> ex.Message |> Error
+                ex -> ex |> OagunthError.outsideSingleExn |> Error
         
         member x.InsertOrUpdateActivities(user,month,year,data) =
             let idValue = makeId user month year
@@ -239,7 +240,7 @@ type ActivityReferenceService(client:IMongoClient) =
                activities.InsertMany(documents)
                newActivities |> Ok
             with
-                ex -> ex.Message |> Error
+                ex -> ex |> OagunthError.outsideSingleExn |> Error
         
         member x.RemoveActivityWithName name =
             try
@@ -248,9 +249,9 @@ type ActivityReferenceService(client:IMongoClient) =
                 let result = activities.DeleteOne(c)
                 if result.DeletedCount <> (int64 0)
                 then () |> Ok
-                else name |> sprintf "Cannot delete [%s]" |> Error
+                else name |> sprintf "Cannot delete [%s]" |> OagunthError.outsideSingle |> Error
             with
-                ex -> ex.Message |> Error
+                ex -> ex |> OagunthError.outsideSingleExn |> Error
 
         member x.GetAllActivities() =
-            try allActivities() |> Set.ofSeq |> Ok with ex -> ex.Message |> Error
+            try allActivities() |> Set.ofSeq |> Ok with ex -> ex |> OagunthError.outsideSingleExn |> Error

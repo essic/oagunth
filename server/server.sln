@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-roject("{F2A71F9B-5D33-465A-A702-920D77279786}") = "oagunth-core", "oagunth-core\oagunth-core.fsproj", "{3F5B1E7E-E30E-4117-8F2D-B641F8922528}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "oagunth-api", "oagunth-api\oagunth-api.fsproj", "{907B77E6-2937-4B2E-8343-359171DC282F}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "oagunth-core", "oagunth-core\oagunth-core.fsproj", "{09E26CB0-3421-413A-BB35-1458567407E0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{2440CD54-9FCC-47ED-BA4C-CDA492643ECC}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "oagunth-core-test", "tests\oagunth-core-test\oagunth-core-test.fsproj", "{64FAF3FE-5092-4613-97EE-825D70900015}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,5 +60,20 @@ Global
 		{09E26CB0-3421-413A-BB35-1458567407E0}.Release|x64.Build.0 = Release|Any CPU
 		{09E26CB0-3421-413A-BB35-1458567407E0}.Release|x86.ActiveCfg = Release|Any CPU
 		{09E26CB0-3421-413A-BB35-1458567407E0}.Release|x86.Build.0 = Release|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Debug|x64.Build.0 = Debug|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Debug|x86.Build.0 = Debug|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Release|x64.ActiveCfg = Release|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Release|x64.Build.0 = Release|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Release|x86.ActiveCfg = Release|Any CPU
+		{64FAF3FE-5092-4613-97EE-825D70900015}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{64FAF3FE-5092-4613-97EE-825D70900015} = {2440CD54-9FCC-47ED-BA4C-CDA492643ECC}
 	EndGlobalSection
 EndGlobal

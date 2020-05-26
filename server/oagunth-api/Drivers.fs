@@ -5,6 +5,7 @@ open Oagunth.Core.Ports
 open NodaTime
 open NodaTime.Extensions
 open System
+open OagunthCore.Core.OagunthErrors
 
 let rec private dirtySequence (x:Result<'a,'b> list) : Result<'a list, 'b> =
     match x with
@@ -29,19 +30,19 @@ let getUserCalendar
         match userService.GetUser username with
         | Error msg -> Error msg
         | Ok user ->
-            let rec getAllOrFail (weeks:WeeklyPeriod list) : Result<WeekAndStatus list,string> =
+            let rec getAllOrFail (weeks:WeeklyPeriod list) : Result<WeekAndStatus list,OagunthError>=
                 match weeks with
                 | [] -> [] |> Ok
                 | item::xs ->
                     match activitySubmissionPort
                               .GetActivitiesStatus(user,month,year,item.Id.WeekNumber) with
-                    | Error msg -> Error msg
+                    | Error err -> Error err
                     | Ok status ->
                         getAllOrFail xs
                         |> Result.map
                                ( fun c ->
                                     { Id = item.Id
-                                      Status = status } :: c)
+                                      Status = status } :: c )
                     
             getAllOrFail
                 (calendar.GetWeeksInOrder()
@@ -50,12 +51,10 @@ let getUserCalendar
                    (fun w ->
                         activityTrackingService.FetchUserActivities(user,month,year)
                         |> Result.map(fun x -> w,x) )
-            |> Result.mapError (fun msg -> [UserCalendarTrackingError.Unknown msg])
             |> Result.map (fun (w,r) -> r,user,w)
             |> Result.bind
                    ( fun (reply,user,w) ->
                         UserCalendarTracking.make user calendar reply w now )
-            |> Result.mapError (sprintf "%A")
 
 let createActivities (activityManagerService:IReferenceActivities) (newActivities: string seq) =
     let newActivities = newActivities |> List.ofSeq
@@ -66,13 +65,16 @@ let createActivities (activityManagerService:IReferenceActivities) (newActivitie
         let currentActivitiesName = allActivities |> Set.map (fun i -> i.Name)
         let commonActivities = Set.intersect entries currentActivitiesName
         
-        if newActivities |> Seq.exists String.IsNullOrWhiteSpace then Error "Invalid activity name detected"
-        elif entries.Count <> newActivities.Length then Error "Duplicates are forbidden !"
+        if newActivities |> Seq.exists String.IsNullOrWhiteSpace
+        then "Invalid activity name detected" |> OagunthError.outsideSingle |> Error
+        elif entries.Count <> newActivities.Length
+        then "Duplicates are forbidden !" |> OagunthError.outsideSingle |> Error
         elif commonActivities.IsEmpty |> not then
             commonActivities
             |> Set.toArray
             |> Array.reduce (fun state entry -> String.Join(";",state,entry))
             |> sprintf "Activities already exists [%s]"
+            |> OagunthError.outsideSingle
             |> Error
         else
            activityManagerService.CreateActivities newActivities
@@ -87,7 +89,7 @@ let addUserActivities
     (userActivitiesToSave: (LocalDate * ActivitiesTrackedForOneDay) list) =
         let now = SystemClock.Instance.InUtc().GetCurrentDate()
         match month |> MonthName.fromInt, userService.GetUser(username) with
-        | Error _, _ | _ , Error _ -> Error "Invalid input !"
+        | Error _, _ | _ , Error _ -> "Invalid input !" |> OagunthError.outsideSingle |> Error
         | Ok month, Ok user ->
             match activityTrackingService.FetchUserActivities(user,month,year) with
             | Error msg -> Error msg
@@ -98,7 +100,7 @@ let addUserActivities
                     ( fun (date,item) ->  newCurrentActivities <- Map.add date item newCurrentActivities)
                 let calendar = MonthlyCalendar.from year month
                 match UserCalendarTracking.make user calendar newCurrentActivities [] now with
-                | Error error -> error |> sprintf "%A" |> Error
+                | Error error -> error |> sprintf "%A"  |> OagunthError.outsideSingle |> Error
                 | Ok userCalendar ->
                     let weeksAndStatus =
                         userCalendar.GetCalendar().GetWeeksInOrder()
@@ -108,7 +110,10 @@ let addUserActivities
                                         .HasAlreadyActivitiesSubmittedOrValidated(user,month,year,item.Id.WeekNumber)
                                         |> Result.map (fun i -> item,i) ) |> Seq.toList       
                     match weeksAndStatus |> dirtySequence with
-                    | Error _ -> Error "Can't control existing activities status (Network error ?)"
+                    | Error e ->
+                        (e :> ITransformErrorToString).String
+                        |> sprintf "Can't control existing activities status (Network error ?) [%s]"
+                        |> OagunthError.outsideSingle |> Error
                     | Ok weeksAndStatus ->
                         let userActivitiesToSave = userActivitiesToSave |> Map.ofList
                         let daysOfWeeksAndStatus =
@@ -122,7 +127,10 @@ let addUserActivities
                         match
                             userActivitiesToSave
                             |> Seq.exists ( fun a -> daysOfWeeksAndStatus.[a.Key]) with
-                        | true ->  "Cannot add activities on days already submitted or validated" |> Error
+                        | true ->
+                            "Cannot add activities on days already submitted or validated"
+                            |> OagunthError.outsideSingle
+                            |> Error
                         | false ->
                             activityTrackingService.InsertOrUpdateActivities
                                 (user,month ,year, userCalendar.GetActivities() |> Map.toSeq |> Set.ofSeq)
@@ -134,20 +142,20 @@ let submitUserActivitiesForWeek
         let now = SystemClock.Instance.InUtc().GetCurrentDate()
         match activitySubmissionPort.HasAlreadyActivitiesSubmittedOrValidated(user,month,year,week) with
         | Error msg -> Error msg
-        | Ok true -> Error "Activities already submitted or validated !"
+        | Ok true ->  "Activities already submitted or validated !" |> OagunthError.outsideSingle |> Error
         | Ok false ->
             let calendar = MonthlyCalendar.from year month
             match activityTrackingPort.FetchUserActivities(user,month,year) with
             | Error msg -> Error msg
             | Ok  currentUserActivities ->
             match UserCalendarTracking.make user calendar currentUserActivities [] now with
-            | Error _ -> Error "Could not retrieve user calendar!"
+            | Error _ ->  "Could not retrieve user calendar!" |> OagunthError.outsideSingle |> Error
             | Ok userCalendar ->
             match userCalendar.GetCalendar().TryFindWeek(week) with
-            | None -> Error "Invalid week for given month !"
+            | None ->  "Invalid week for given month !" |> OagunthError.outsideSingle |> Error
             | Some weeklyPeriod ->
                 if weeklyPeriod.BusinessDays.IsEmpty
-                then Error "No working day exists for this week !"
+                then  "No working day exists for this week !" |> OagunthError.outsideSingle |> Error
                 else
                     let allHasBeenTracked =
                         weeklyPeriod.BusinessDays
@@ -158,4 +166,4 @@ let submitUserActivitiesForWeek
                                 | _ -> false   )
                     if allHasBeenTracked then
                         activitySubmissionPort.Submit(user,month,year,week)
-                    else "All has not been tracked !" |> Error
+                    else "All has not been tracked !" |> OagunthError.outsideSingle |> Error

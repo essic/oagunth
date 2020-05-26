@@ -8,3 +8,14 @@ nuget NodaTime
 nuget Saturn
 nuget MongoDB.Driver
 nuget TaskBuilder.fs
+
+group Test
+source https://api.nuget.org/v3/index.json
+generate_load_scripts: true
+framework: netcore3.1
+
+nuget Expecto.FsCheck 9.0.0
+nuget Fsharp.Core redirects: force
+nuget Expecto
+nuget YoloDev.Expecto.TestSdk
+nuget Microsoft.NET.Test.Sdk

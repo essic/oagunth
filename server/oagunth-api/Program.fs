@@ -5,6 +5,7 @@ open System
 open System.Globalization
 open System.Security.Authentication
 open Giraffe
+open OagunthCore.Core.OagunthErrors
 open Saturn
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
@@ -87,7 +88,10 @@ module Server =
                     getUserCalendar userService timeDataService activitySubmissionService username (Some date)
                     |> Result.map UserCalendarTrackingDto
                     |> Result.map (fun reply -> json reply next ctx)
-                    |> Result.mapError (fun msg -> Response.internalError ctx msg)
+                    |> Result.mapError
+                           (fun err ->
+                                let msg = (err :> ITransformErrorToString).String
+                                Response.internalError ctx msg)
                 match result with
                 | Ok toReturn | Error toReturn -> toReturn
 
@@ -101,7 +105,7 @@ module Server =
             return!
                 match addUserActivities userService timeDataService
                           activitySubmissionService username month year data with
-                | Error msg -> Response.badRequest ctx msg
+                | Error msg -> Response.badRequest ctx (msg :> ITransformErrorToString).String
                 | _ -> Response.ok ctx String.Empty
         }
 
@@ -112,13 +116,13 @@ module Server =
             | Ok user ->
                 let dto = UserDto(user) 
                 json dto next ctx
-            | Error msg -> Response.internalError ctx msg
+            | Error msg -> Response.internalError ctx (msg :> ITransformErrorToString).String
             
     let removeLogin username : HttpHandler =
         fun _ ctx ->
             let userService = ctx.GetService<IManageUser>()
             match userService.DeleteUser username with
-            | Error msg -> Response.internalError ctx msg
+            | Error msg -> Response.internalError ctx (msg :> ITransformErrorToString).String
             | _ -> Response.ok ctx String.Empty
             
     let createActivities  = 
@@ -127,7 +131,7 @@ module Server =
             let! payload = ctx.BindJsonAsync<CreateActivitiesRequest>()
             return!
                 match createActivities activityRefService payload.Activities with
-                | Error msg -> Response.badRequest ctx msg
+                | Error msg -> Response.badRequest ctx (msg :> ITransformErrorToString)
                 | Ok r ->
                     let dto = r |> List.map ActivityDto
                     json dto next ctx
@@ -137,14 +141,14 @@ module Server =
         fun _ (ctx:HttpContext) ->
             let activityRefService = ctx.GetService<IReferenceActivities>()
             match activityRefService.RemoveActivityWithName name with
-            | Error msg -> Response.badRequest ctx msg
+            | Error msg -> Response.badRequest ctx (msg :> ITransformErrorToString).String
             | _ -> Response.ok ctx String.Empty
     
     let getActivities =
         fun next (ctx:HttpContext) ->
             let activityRefService = ctx.GetService<IReferenceActivities>()
             match activityRefService.GetAllActivities() with
-            | Error msg -> Response.internalError ctx msg
+            | Error msg -> Response.internalError ctx (msg :> ITransformErrorToString).String
             | Ok activities ->
                 let dto = activities |> Seq.map ActivityDto |> Seq.toArray
                 json dto next ctx
@@ -158,7 +162,7 @@ module Server =
             | Error msg -> Response.forbidden ctx msg
             | Ok user ->
                 match MonthName.fromInt month with
-                | Error msg -> Response.badRequest ctx msg
+                | Error msg -> Response.badRequest ctx (msg :> ITransformErrorToString).String
                 | Ok month ->
                     let r = submitUserActivitiesForWeek
                                 (activityTrackingService,

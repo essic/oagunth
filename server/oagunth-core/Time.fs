@@ -1,5 +1,8 @@
 namespace Oagunth.Core
 
+open NodaTime
+open OagunthCore.Core.OagunthErrors
+
 //We create a module, it corresponds to a static class from the CLR perspective
 module Time =
 
@@ -24,9 +27,9 @@ module Time =
     //This is a function.
     //It wraps the call to the LocalDate object. LocalDate comes from NodaTime a C# library
     //No need for the 'new' keyword here
-    let mkDate (year: Year) (month: Month) (day: Day): LocalDate = LocalDate(year, month, day)
-
-
+    let mkDate (year: Year) (month: Month) (day: Day): LocalDate =
+            LocalDate(year, month, day)
+        
     //This is a F# list. It is different from C# List<T>
     //list<T> or T list in F# is an ordered, immutable series of same type values
     //list is implemented as singly linked lists
@@ -72,12 +75,14 @@ module Time =
         //This is an array !
         let ofYear =
             [| January; February; March; April; May; June; July; August; September; October; November; December |]
+            |> Set.ofArray
 
         //Simple function to convert MonthName to Month (alias of int)
         // Month is the return type of the function
         // The type is inferred from its usage bellow
         let toInt value: Month =
-            ofYear //You better have wrriten things in the correct order ! 
+            ofYear //You better have wrriten things in the correct order !
+            |> Array.ofSeq
             |> Array.findIndex (fun m -> m = value)
             |> fun i -> i + 1
         
@@ -107,20 +112,20 @@ module Time =
         let fromInt (value: Month) =
             let monthlyIndex = value - 1
             //Ladies and gents, behold the 'if ... then ... else ...' expression !
-            if monthlyIndex < 0 || monthlyIndex >= ofYear.Length then
+            if monthlyIndex < 0 || monthlyIndex >= ofYear.Count then
                 value
-                |> sprintf "Invalid value for month %i" //this is how we format string 
-                |> Error // from string to Error of string
+                |> sprintf "Invalid value for month %i" //this is how we format string
+                |> OagunthError.insideSingle
+                |> Error // from OagunthError to Error of OagunthError
             else
                 //To access an array you do '.[]' as bellow
-                ofYear.[monthlyIndex] |> Ok // from Month (alias of int) to Ok of MonthName
+                (ofYear |> Array.ofSeq).[monthlyIndex] |> Ok // from Month (alias of int) to Ok of MonthName
         
+        //Pure in practice, Impure in theory :p
         let fromLocalDate(value:LocalDate) =
             match value.Month |> fromInt with
             | Ok monthName -> monthName
             | Error _ -> failwith "The impossible occured !"
-        
-
 
     //This is a record
     type WeekId =
@@ -138,8 +143,7 @@ module Time =
     //The type of day is inferred from its usage
     let getWeekNumberFromDate day: WeekNumber =
         WeekYearRules.Iso.GetWeekOfWeekYear(day) //A call from NodaTime library...
-    let getWeekYearFromDate day: Year =
-        WeekYearRules.Iso.GetWeekYear(day)
+    let getWeekYearFromDate day: Year = WeekYearRules.Iso.GetWeekYear(day)
 
     //Generating all weeks for a given year...
     //The type of 'year' and the return type of 'getAllWeeksForYear' are inferred from usage
