@@ -39,4 +39,7 @@ Run it.
 ** It's using SwiftUI so only iOS 13 and above are supported **
 
 
+I wanted to put the screenshot here, but it's too ugly... I got some in the repo anyway. Only Current month has been "implemented".
+
+I'll probably never update this again :p
 
