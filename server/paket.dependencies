@@ -1,7 +1,7 @@
 source https://api.nuget.org/v3/index.json
 generate_load_scripts: true
 storage: none
-framework: netcore3.1, netstandard2.0, netstandard2.1
+framework: net5.0
 
 nuget Fsharp.Core redirects: force
 nuget NodaTime
@@ -12,9 +12,9 @@ nuget TaskBuilder.fs
 group Test
 source https://api.nuget.org/v3/index.json
 generate_load_scripts: true
-framework: netcore3.1
+framework: net5.0
 
-nuget Expecto.FsCheck 9.0.0
+nuget Expecto.FsCheck
 nuget Fsharp.Core redirects: force
 nuget Expecto
 nuget YoloDev.Expecto.TestSdk

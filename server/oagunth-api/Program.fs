@@ -7,12 +7,11 @@ open System.Security.Authentication
 open Giraffe
 open Oagunth.Core.OagunthErrors
 open Saturn
-open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-open FSharp.Control.Tasks.V2
+open FSharp.Control.Tasks
 open NodaTime
 open MongoDB.Driver
 open Oagunth.Core.Time
@@ -48,7 +47,7 @@ module Server =
                         s
                     MongoClient(settings) :> IMongoClient )
          
-    let configureAppConfiguration  (context: WebHostBuilderContext) (config: IConfigurationBuilder) =  
+    let configureAppConfiguration  (context: HostBuilderContext) (config: IConfigurationBuilder) =  
         config
             .AddJsonFile("appsettings.json",false,true)
             .AddJsonFile(sprintf "appsettings.%s.json" context.HostingEnvironment.EnvironmentName ,true)
