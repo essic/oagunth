@@ -44,15 +44,14 @@ type ActivityTrackedDto(time,date:LocalDate,activityId) =
     
  type MonthlyCalendarDto(calendar:MonthlyCalendar,date:LocalDate) =
      member val CurrentWeekYear =
-        match calendar.GetCurrentWeek(date) with
-        | Some x -> x.WeekYear
-        | _ -> 0
-        with get
+        (match calendar.GetCurrentWeek(date) with
+         | Some x -> x.WeekYear
+         | _ -> 0) with get
+
      member val CurrentWeekNumber =
-        match calendar.GetCurrentWeek(date) with
+        ( match calendar.GetCurrentWeek(date) with
         | Some x -> x.WeekNumber
-        | _ -> 0
-        with get
+        | _ -> 0 ) with get
      member val Weeks =
         calendar.GetWeeksInOrder() |> Array.map WeeklyCalendarDto with get        
  type UserDto(user:User) =
